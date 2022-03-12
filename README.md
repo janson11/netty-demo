@@ -210,3 +210,59 @@ Netty 的零拷贝技术
 
 
 ## 从 Linux 出发深入剖析服务端启动流程
+
+开始深入分析 Netty 服务端的启动流程。在服务端启动之前，需要配置 ServerBootstrap 的相关参数，这一步大致可以分为以下几个步骤：
+
+1. 配置 EventLoopGroup 线程组；
+
+2. 配置 Channel 的类型；
+
+3. 设置 ServerSocketChannel 对应的 Handler；
+
+4. 设置网络监听的端口；
+
+5. 设置 SocketChannel 对应的 Handler；
+
+6. 配置 Channel 参数。
+
+
+
+服务端 Channel 的过程我们已经讲完了，简单总结下其中几个重要的步骤：
+
+1. ReflectiveChannelFactory 通过反射创建 NioServerSocketChannel 实例；
+
+2. 创建 JDK 底层的 ServerSocketChannel；
+
+3. 为 Channel 创建 id、unsafe、pipeline 三个重要的成员变量；
+
+4. 设置 Channel 为非阻塞模式。
+
+
+
+服务端启动的全流程
+
+1. 创建服务端 Channel：本质是创建 JDK 底层原生的 Channel，并初始化几个重要的属性，包括 id、unsafe、pipeline 等。
+
+2. 初始化服务端 Channel：设置 Socket 参数以及用户自定义属性，并添加两个特殊的处理器 ChannelInitializer 和 ServerBootstrapAcceptor。
+
+3. 注册服务端 Channel：调用 JDK 底层将 Channel 注册到 Selector 上。
+
+4. 端口绑定：调用 JDK 底层进行端口绑定，并触发 channelActive 事件，把 OP_ACCEPT 事件注册到 Channel 的事件集合中
+
+
+
+Netty 服务端完全启动后，就可以对外工作了。接下来 Netty 服务端是如何处理客户端新建连接的呢？主要分为四步：
+
+1. Boss NioEventLoop 线程轮询客户端新连接 OP_ACCEPT 事件；
+
+2. 构造 Netty 客户端 NioSocketChannel；
+
+3. 注册 Netty 客户端 NioSocketChannel 到 Worker 工作线程中；
+
+4. 注册 OP_READ 事件到 NioSocketChannel 的事件集合。
+
+
+
+Netty 服务端启动的相关源码层次比较深，推荐大家在读源码的时候，可以先把主体流程如下
+
+![图片7.png](https://s0.lgstatic.com/i/image/M00/87/A2/CgqCHl_WABCAJA9VAAIG0Ncq3hs061.png)
