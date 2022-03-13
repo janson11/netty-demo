@@ -266,3 +266,21 @@ Netty 服务端完全启动后，就可以对外工作了。接下来 Netty 服�
 Netty 服务端启动的相关源码层次比较深，推荐大家在读源码的时候，可以先把主体流程如下
 
 ![图片7.png](https://s0.lgstatic.com/i/image/M00/87/A2/CgqCHl_WABCAJA9VAAIG0Ncq3hs061.png)
+
+
+
+NioEventLoop 的 run() 方法是一个无限循环，没有任何退出条件，在不间断循环执行以下三件事情，可以用下面这张图形象地表示。
+
+![Lark20201216-164824.png](https://s0.lgstatic.com/i/image2/M01/02/1E/Cip5yF_ZyhCAM3GUAASrdEcuR2U593.png)
+
+1. 轮询 I/O 事件（select）：轮询 Selector 选择器中已经注册的所有 Channel 的 I/O 事件。
+
+2. 处理 I/O 事件（processSelectedKeys）：处理已经准备就绪的 I/O 事件。
+
+3. 处理异步任务队列（runAllTasks）：Reactor 线程还有一个非常重要的职责，就是处理任务队列中的非 I/O 任务。Netty 提供了 ioRatio 参数用于调整 I/O 事件处理和任务处理的时间比例。
+
+
+
+Netty 为了解决臭名昭著的 JDK epoll 空轮询 Bug
+
+实际上 Netty 并没有从根源上解决该问题，而是巧妙地规避了这个问题。Netty 引入了计数变量 selectCnt，用于记录 select 操作的次数，如果事件轮询时间小于 timeoutMillis，并且在该时间周期内连续发生超过 SELECTOR_AUTO_REBUILD_THRESHOLD（默认512） 次空轮询，说明可能触发了 epoll 空轮询 Bug。Netty 通过重建新的 Selector 对象，将异常的 Selector 中所有的 SelectionKey 会重新注册到新建的 Selector，重建完成之后异常的 Selector 就可以废弃了
