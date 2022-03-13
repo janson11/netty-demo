@@ -319,3 +319,14 @@ ThreadLocal 和 FastThreadLocal，简单总结下 FastThreadLocal 的优势。
 
 安全性更高。JDK 原生的 ThreadLocal 使用不当可能造成内存泄漏，只能等待线程销毁。在使用线程池的场景下，ThreadLocal 只能通过主动检测的方式防止内存泄漏，从而造成了一定的开销。然而 FastThreadLocal 不仅提供了 remove() 主动清除对象的方法，而且在线程池场景中 Netty 还封装了 FastThreadLocalRunnable，FastThreadLocalRunnable 最后会执行 FastThreadLocal.removeAll() 将 Set 集合中所有 FastThreadLocal 对象都清理掉，
 
+
+
+延迟任务处理神器之时间轮 HashedWheelTimer
+
+HashedWheelTimer 并不是十全十美的，使用的时候需要清楚它存在的问题：
+
+如果长时间没有到期任务，那么会存在时间轮空推进的现象。
+
+只适用于处理耗时较短的任务，由于 Worker 是单线程的，如果一个任务执行的时间过长，会造成 Worker 线程阻塞。
+
+相比传统定时器的实现方式，内存占用较大。
