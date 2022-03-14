@@ -376,3 +376,15 @@ JCTools 也是一个开源项目，Github 地址为 https://github.com/JCTools/J
 3. Spmc 单生产者多消费者；
 
 4. Mpmc 多生产者多消费者。
+
+
+
+MpscArrayQueue 还只是 Jctools 中的冰山一角，其中蕴藏着丰富的技术细节，我们对 MpscArrayQueue 的知识点做一个简单的总结。
+
+通过大量填充 long 类型变量解决伪共享问题。
+
+环形数组的容量设置为 2 的次幂，可以通过位运算快速定位到数组对应下标。
+
+入队 offer() 操作中 producerLimit 的巧妙设计，大幅度减少了主动获取消费者索引 consumerIndex 的次数，性能提升显著。
+
+入队和出队操作中都大量使用了 UNSAFE 系列方法，针对生产者和消费者的场景不同，使用的 UNSAFE 方法也是不一样的。Jctools 在底层操作的运用上也是有的放矢，把性能发挥到极致。
